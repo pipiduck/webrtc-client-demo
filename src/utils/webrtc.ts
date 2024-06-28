@@ -67,12 +67,17 @@ export class Webrtc {
     peerConnection.onicecandidate = (e) => {
       console.log(6666, "onicecandidate", e);
       if (e.candidate) {
+        // https://developer.mozilla.org/zh-CN/docs/Web/API/RTCPeerConnection/addIceCandidate
         this.signal.send({
           cmd: E_SOCKET_CMD_SEND.candidate,
           payload: {
             from: this.localID,
             to: this.remoteID,
-            candidate: e.candidate,
+            candidate: {
+                candidate: e.candidate.candidate,
+                sdpMid: e.candidate.sdpMid,
+                sdpMLineIndex: e.candidate.sdpMLineIndex,
+            },
           },
         });
       } else {
