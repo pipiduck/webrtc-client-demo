@@ -1,0 +1,17 @@
+{
+  "include": [
+      "./src/**/*"
+  ],
+  "exclude": [
+        "./node_modules"
+  ],
+  "compilerOptions": {
+    //  "typeRoots": ["./src/types", "./node_modules/@types"],
+      "esModuleInterop": true, /* 支持以import xx from ‘xx’格式引入 */
+      "lib": [
+          "dom",
+          "es2015"
+      ],
+      "jsx": "react-jsx"
+  }
+}
