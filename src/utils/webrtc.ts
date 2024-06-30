@@ -32,40 +32,43 @@ export class Webrtc {
   }
 
   async startPassive(offer: RTCSessionDescriptionInit) {
+    if (!offer) {
+      console.log("offer is null");
+      return;
+    }
     this.createPeerConnection();
-    console.log(2333, __USER_IDENTITY__, "setOffer setRemoteDescription");
+    console.log(2333, __USER_IDENTITY__, "setRemoteDescription(offer)");
     this.peerConnection.setRemoteDescription(offer);
     this.sendAnswer();
   }
 
   async setAnswer(answer: RTCSessionDescriptionInit) {
     if (!answer) return;
-    console.log(2333, __USER_IDENTITY__, "setAnswer setRemoteDescription");
+    console.log(
+      2333,
+      __USER_IDENTITY__,
+      "setRemoteDescription(answer)"
+    );
     await this.peerConnection.setRemoteDescription(answer);
   }
 
   async setCandidate(candidate) {
     if (!candidate) return;
-    console.log(2333, __USER_IDENTITY__, "addIceCandidate");
+    console.log("addIceCandidate", candidate);
     await this.peerConnection.addIceCandidate(candidate);
   }
 
-  async sendMediaStream() {
-    if (!this.localStream) {
-      console.log("localStream is null");
-      return;
-    }
-    this.localStream.getTracks().forEach((track) => {
-      this.peerConnection.addTrack(track, this.localStream);
-    });
+  async stop() {
+    this.peerConnection.close();
+    console.log(2333, __USER_IDENTITY__, "peerConnection.close");
   }
 
   private createPeerConnection() {
+    const peerConnection = new RTCPeerConnection(); // ICE_CONFIG
     console.log(2333, __USER_IDENTITY__, "createPeerConnection");
-    const peerConnection = new RTCPeerConnection(ICE_CONFIG);
     // 获取本机ice，并发送给信令服务器
     peerConnection.onicecandidate = (e) => {
-      console.log(6666, "onicecandidate", e);
+      console.log("onicecandidate", e);
       if (e.candidate) {
         // https://developer.mozilla.org/zh-CN/docs/Web/API/RTCPeerConnection/addIceCandidate
         this.signal.send({
@@ -74,9 +77,9 @@ export class Webrtc {
             from: this.localID,
             to: this.remoteID,
             candidate: {
-                candidate: e.candidate.candidate,
-                sdpMid: e.candidate.sdpMid,
-                sdpMLineIndex: e.candidate.sdpMLineIndex,
+              candidate: e.candidate.candidate,
+              sdpMid: e.candidate.sdpMid,
+              sdpMLineIndex: e.candidate.sdpMLineIndex,
             },
           },
         });
@@ -84,34 +87,51 @@ export class Webrtc {
         console.log("All ICE candidates have been sent");
       }
     };
+    peerConnection.onicegatheringstatechange = (e) => {
+      console.log("ice state change", e);
+    };
     // 获取远端视频流并播放
     peerConnection.ontrack = (e) => {
       this.media.srcObject = e.streams[0];
     };
+
+    // 必须在createOffer前提供媒体流，否则创建的sdp将缺少media信息，收集ice的流程也不会开启
+    // https://stackoverflow.com/questions/27489881/webrtc-never-fires-onicecandidate/27758788#27758788
+    if (!this.localStream) {
+      console.log("localStream is null");
+      return;
+    }
+    this.localStream.getTracks().forEach((track) => {
+      peerConnection.addTrack(track, this.localStream);
+    });
+    console.log(2333, __USER_IDENTITY__, "peerConnection.addTrack");
 
     this.peerConnection = peerConnection;
   }
 
   private async sendOffer() {
     // 创建offer并发送给对端
+    console.log(2333, __USER_IDENTITY__, "createOffer");
     const offer = await this.peerConnection.createOffer();
     this.signal.send({
       cmd: E_SOCKET_CMD_SEND.offer,
       payload: { from: this.localID, to: this.remoteID, offer },
     });
-    console.log(2333, __USER_IDENTITY__, "createOffer");
+    console.log(2333, __USER_IDENTITY__, "send Offer");
+    // setLocalDescription 后才会触发收集ice流程
     this.peerConnection.setLocalDescription(offer);
-    console.log(2333, __USER_IDENTITY__, "setLocalDescription");
+    console.log(2333, __USER_IDENTITY__, "setLocalDescription(offer)");
   }
 
   private async sendAnswer() {
-    const answer = await this.peerConnection.createAnswer();
     console.log(2333, __USER_IDENTITY__, "createAnswer");
+    const answer = await this.peerConnection.createAnswer();
     this.signal.send({
       cmd: E_SOCKET_CMD_SEND.answer,
       payload: { from: this.localID, to: this.remoteID, answer },
     });
+    console.log(2333, __USER_IDENTITY__, "send answer");
     await this.peerConnection.setLocalDescription(answer);
-    console.log(2333, __USER_IDENTITY__, "setLocalDescription");
+    console.log(2333, __USER_IDENTITY__, "setLocalDescription(answer)");
   }
 }

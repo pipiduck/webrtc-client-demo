@@ -22,10 +22,12 @@ export enum E_SOCKET_CMD_SEND {
   answer = "answer",
   connected = "client-websocket-connected",
   calling = "calling", // 发起呼叫
+  acceptCall = "accept-call" // 接受呼叫
 }
 
 export enum E_SOCKET_CMD_RECIVE {
   calling = "calling", // 被动呼叫，建立webrtc连接
+  acceptCall = "accept-call", // 接受呼叫
   offer = "offer",
   answer = "answer",
   candidate = "candidate",

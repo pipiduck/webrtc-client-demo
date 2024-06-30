@@ -28,13 +28,13 @@ export class Socket {
   }
 
   private onMessage(e: MessageEvent) {
-    this?.options?.onMessage && this.options.onMessage(e);
     console.log("socket onMessage", e);
+    this?.options?.onMessage && this.options.onMessage(e);
   }
 
   private onOpen(e: Event) {
     console.log("socket established", e);
-    this.send({cmd: E_SOCKET_CMD_SEND.connected}); // 建立ws连接成功后发送消息给服务端
+    this.send({ cmd: E_SOCKET_CMD_SEND.connected }); // 建立ws连接成功后发送消息给服务端
   }
 
   private onError(e: Event) {

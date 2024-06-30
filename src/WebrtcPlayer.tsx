@@ -3,6 +3,7 @@ import { Socket } from "./utils/socket";
 import { Webrtc } from "./utils/webrtc";
 import {
   E_SOCKET_CMD_RECIVE,
+  E_SOCKET_CMD_SEND,
   E_USER_NAME,
   SIGNALING_SERVER,
 } from "./constants";
@@ -33,27 +34,28 @@ export const WebrtcPlayer = () => {
     };
   }, []);
 
-  async function callAnother() {
-    // 发送呼叫消息
-    // socketRef.current?.send({
-    //   cmd: E_SOCKET_CMD_RECIVE.calling,
-    //   payload: {
-    //     from: localID,
-    //     to: remoteID,
-    //   },
-    // });
-    start("active");
-  }
-
-  async function start(type: "active" | "passive" = "active", offer?: RTCSessionDescriptionInit) {
-    setIsCalling(true);
-    // 获取浏览器摄像头与音频流
-    // streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    streamRef.current = await navigator.mediaDevices.getDisplayMedia({
+  async function call(type: "active" | "passive" = "active") {
+    // getUserMedia 本地摄像头
+    // getDisplayMedia 浏览器录屏
+    streamRef.current = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
+    const { localID, remoteID } = getLocalRemoteID(__USER_IDENTITY__);
+    socketRef.current.send({
+      cmd:
+        type === "active"
+          ? E_SOCKET_CMD_SEND.calling
+          : E_SOCKET_CMD_SEND.acceptCall,
+      payload: { from: localID, to: remoteID },
+    });
+  }
 
+  async function start(
+    type: "active" | "passive" = "active",
+    offer?: RTCSessionDescriptionInit
+  ) {
+    setIsCalling(true);
     // 建立webrtc连接
     webrtcRef.current = new Webrtc({
       media: videoRef.current,
@@ -64,30 +66,44 @@ export const WebrtcPlayer = () => {
       localStream: streamRef.current,
     });
 
-    if(type === "active"){
+    if (type === "active") {
       webrtcRef.current.startActive();
     }
-    if(type === "passive"){
+    if (type === "passive") {
       webrtcRef.current.startPassive(offer);
     }
-
-    webrtcRef.current.sendMediaStream();
   }
 
   function stop() {
+    // 关闭webrtc连接
+    if (webrtcRef.current) {
+      webrtcRef.current.stop();
+      webrtcRef.current = null;
+    }
+    // 停止获取媒体流
+    if (!streamRef.current) return;
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
     setIsCalling(false);
   }
 
   const onSocketMsg = async (e: MessageEvent) => {
     const { cmd, payload } = JSON.parse(e.data);
-    console.log(2333, cmd, payload);
     switch (cmd) {
+      case E_SOCKET_CMD_RECIVE.calling:
+        // 被呼叫方接听电话
+        call("passive");
+        break;
+      case E_SOCKET_CMD_RECIVE.acceptCall:
+        start("active");
+        break;
       case E_SOCKET_CMD_RECIVE.offer:
-          // 被呼叫方，收到offer建立连接
-          start("passive", payload.offer)
+        // 被呼叫方，收到offer建立连接
+        start("passive", payload.offer);
         break;
       case E_SOCKET_CMD_RECIVE.answer:
-         webrtcRef.current?.setAnswer(payload.answer);
+        webrtcRef.current?.setAnswer(payload.answer);
         break;
       case E_SOCKET_CMD_RECIVE.candidate:
         webrtcRef.current?.setCandidate(payload.candidate);
@@ -101,7 +117,11 @@ export const WebrtcPlayer = () => {
   return (
     <div>
       <div>
-        <button disabled={isCalling} onClick={callAnother}>
+        <button
+          style={{ marginLeft: "30px" }}
+          disabled={isCalling}
+          onClick={() => call("active")}
+        >
           Call{" "}
           {__USER_IDENTITY__ === E_USER_NAME.Alice
             ? E_USER_NAME.Bob
