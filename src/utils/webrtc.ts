@@ -37,18 +37,14 @@ export class Webrtc {
       return;
     }
     this.createPeerConnection();
-    console.log(2333, __USER_IDENTITY__, "setRemoteDescription(offer)");
+    console.warn(__USER_IDENTITY__, "setRemoteDescription(offer)");
     this.peerConnection.setRemoteDescription(offer);
     this.sendAnswer();
   }
 
   async setAnswer(answer: RTCSessionDescriptionInit) {
     if (!answer) return;
-    console.log(
-      2333,
-      __USER_IDENTITY__,
-      "setRemoteDescription(answer)"
-    );
+    console.warn(__USER_IDENTITY__, "setRemoteDescription(answer)");
     await this.peerConnection.setRemoteDescription(answer);
   }
 
@@ -60,12 +56,12 @@ export class Webrtc {
 
   async stop() {
     this.peerConnection.close();
-    console.log(2333, __USER_IDENTITY__, "peerConnection.close");
+    console.warn(__USER_IDENTITY__, "peerConnection.close");
   }
 
   private createPeerConnection() {
-    const peerConnection = new RTCPeerConnection(); // ICE_CONFIG
-    console.log(2333, __USER_IDENTITY__, "createPeerConnection");
+    const peerConnection = new RTCPeerConnection(ICE_CONFIG); // ICE_CONFIG
+    console.warn(__USER_IDENTITY__, "createPeerConnection");
     // 获取本机ice，并发送给信令服务器
     peerConnection.onicecandidate = (e) => {
       console.log("onicecandidate", e);
@@ -104,34 +100,36 @@ export class Webrtc {
     this.localStream.getTracks().forEach((track) => {
       peerConnection.addTrack(track, this.localStream);
     });
-    console.log(2333, __USER_IDENTITY__, "peerConnection.addTrack");
+    console.warn(__USER_IDENTITY__, "peerConnection.addTrack");
 
     this.peerConnection = peerConnection;
   }
 
   private async sendOffer() {
     // 创建offer并发送给对端
-    console.log(2333, __USER_IDENTITY__, "createOffer");
+    console.warn(__USER_IDENTITY__, "createOffer");
     const offer = await this.peerConnection.createOffer();
+    console.log("offer", offer);
     this.signal.send({
       cmd: E_SOCKET_CMD_SEND.offer,
       payload: { from: this.localID, to: this.remoteID, offer },
     });
-    console.log(2333, __USER_IDENTITY__, "send Offer");
+    console.warn(__USER_IDENTITY__, "send Offer");
     // setLocalDescription 后才会触发收集ice流程
     this.peerConnection.setLocalDescription(offer);
-    console.log(2333, __USER_IDENTITY__, "setLocalDescription(offer)");
+    console.warn(__USER_IDENTITY__, "setLocalDescription(offer)");
   }
 
   private async sendAnswer() {
-    console.log(2333, __USER_IDENTITY__, "createAnswer");
+    console.warn(__USER_IDENTITY__, "createAnswer");
     const answer = await this.peerConnection.createAnswer();
+    console.log("answer", answer);
     this.signal.send({
       cmd: E_SOCKET_CMD_SEND.answer,
       payload: { from: this.localID, to: this.remoteID, answer },
     });
-    console.log(2333, __USER_IDENTITY__, "send answer");
+    console.warn(__USER_IDENTITY__, "send answer");
     await this.peerConnection.setLocalDescription(answer);
-    console.log(2333, __USER_IDENTITY__, "setLocalDescription(answer)");
+    console.warn(__USER_IDENTITY__, "setLocalDescription(answer)");
   }
 }
