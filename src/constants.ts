@@ -4,11 +4,7 @@ export const ICE_CONFIG = {
   iceServers: [
     { urls: ["stun:stun.ekiga.net:3478", "stun:stun.ekiga.net:3578"] },
     { urls: ["turn:turnserver.com"], username: "user", credential: "pass" },
-  ],
-  //   iceServers: [
-  //     { urls: ["stun:stun.ekiga.net"] },
-  //     { urls: ["turn:turnserver.com"], username: "user", credential: "pass" },
-  //   ],
+  ]
 };
 
 export enum E_USER_NAME {
@@ -22,7 +18,8 @@ export enum E_SOCKET_CMD_SEND {
   answer = "answer",
   connected = "client-websocket-connected",
   calling = "calling", // 发起呼叫
-  acceptCall = "accept-call" // 接受呼叫
+  acceptCall = "accept-call", // 接受呼叫
+  hangUp = "hang-up",
 }
 
 export enum E_SOCKET_CMD_RECIVE {
@@ -31,4 +28,5 @@ export enum E_SOCKET_CMD_RECIVE {
   offer = "offer",
   answer = "answer",
   candidate = "candidate",
+  hangUp = "hang-up",
 }

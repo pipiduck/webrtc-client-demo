@@ -17,6 +17,7 @@ const { localID, remoteID } = getLocalRemoteID(__USER_IDENTITY__);
 
 export const WebrtcPlayer = () => {
   const [isCalling, setIsCalling] = useState(false);
+  const [isShowVideo, setIsShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -41,7 +42,6 @@ export const WebrtcPlayer = () => {
       video: true,
       audio: true,
     });
-    const { localID, remoteID } = getLocalRemoteID(__USER_IDENTITY__);
     socketRef.current.send({
       cmd:
         type === "active"
@@ -72,9 +72,16 @@ export const WebrtcPlayer = () => {
     if (type === "passive") {
       webrtcRef.current.startPassive(offer);
     }
+    setIsShowVideo(true);
   }
 
-  function stop() {
+  function stop(isActive: boolean = true) {
+    // websocket通知对端结束通话
+    isActive &&
+      socketRef.current.send({
+        cmd: E_SOCKET_CMD_SEND.hangUp,
+        payload: { from: localID, to: remoteID },
+      });
     // 关闭webrtc连接
     if (webrtcRef.current) {
       webrtcRef.current.stop();
@@ -86,6 +93,7 @@ export const WebrtcPlayer = () => {
     streamRef.current = null;
 
     setIsCalling(false);
+    setIsShowVideo(false);
   }
 
   const onSocketMsg = async (e: MessageEvent) => {
@@ -107,6 +115,9 @@ export const WebrtcPlayer = () => {
         break;
       case E_SOCKET_CMD_RECIVE.candidate:
         webrtcRef.current?.setCandidate(payload.candidate);
+        break;
+      case E_SOCKET_CMD_RECIVE.hangUp:
+        stop(false);
         break;
       default:
         console.log("unknown cmd", cmd);
@@ -130,12 +141,17 @@ export const WebrtcPlayer = () => {
         <button
           style={{ marginLeft: "30px" }}
           disabled={!isCalling}
-          onClick={stop}
+          onClick={() => stop()}
         >
           Hang Up
         </button>
       </div>
-      <video ref={videoRef} autoPlay id="rtc-video"></video>
+      <video
+        style={{ display: isShowVideo ? "block" : "none", marginTop: "30px" }}
+        ref={videoRef}
+        autoPlay
+        id="rtc-video"
+      ></video>
     </div>
   );
 };
