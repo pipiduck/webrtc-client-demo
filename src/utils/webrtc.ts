@@ -45,13 +45,13 @@ export class Webrtc {
   async setAnswer(answer: RTCSessionDescriptionInit) {
     if (!answer) return;
     console.warn(__USER_IDENTITY__, "setRemoteDescription(answer)");
-    await this.peerConnection.setRemoteDescription(answer);
+    this.peerConnection.setRemoteDescription(answer);
   }
 
   async setCandidate(candidate) {
     if (!candidate) return;
     console.log("addIceCandidate", candidate);
-    await this.peerConnection.addIceCandidate(candidate);
+    this.peerConnection.addIceCandidate(candidate);
   }
 
   async stop() {
@@ -129,7 +129,7 @@ export class Webrtc {
       payload: { from: this.localID, to: this.remoteID, answer },
     });
     console.warn(__USER_IDENTITY__, "send answer");
-    await this.peerConnection.setLocalDescription(answer);
+    this.peerConnection.setLocalDescription(answer);
     console.warn(__USER_IDENTITY__, "setLocalDescription(answer)");
   }
 }
