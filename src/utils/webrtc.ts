@@ -91,6 +91,8 @@ export class Webrtc {
       this.media.srcObject = e.streams[0];
     };
 
+    this.peerConnection = peerConnection;
+
     // 必须在createOffer前提供媒体流，否则创建的sdp将缺少media信息，收集ice的流程也不会开启
     // https://stackoverflow.com/questions/27489881/webrtc-never-fires-onicecandidate/27758788#27758788
     if (!this.localStream) {
@@ -101,14 +103,15 @@ export class Webrtc {
       peerConnection.addTrack(track, this.localStream);
     });
     console.warn(__USER_IDENTITY__, "peerConnection.addTrack");
-
-    this.peerConnection = peerConnection;
   }
 
   private async sendOffer() {
     // 创建offer并发送给对端
     console.warn(__USER_IDENTITY__, "createOffer");
-    const offer = await this.peerConnection.createOffer();
+    const offer = await this.peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+    });
     console.log("offer", offer);
     this.signal.send({
       cmd: E_SOCKET_CMD_SEND.offer,
