@@ -2,7 +2,7 @@ export const SIGNALING_SERVER = "ws://localhost:3322";
 
 export const ICE_CONFIG = {
   iceServers: [
-    { urls: ["stun:stun.ekiga.net:3478", "stun:stun.ekiga.net:3578"] },
+    { urls: ["stun:stun.l.google.com"] },
     { urls: ["turn:turnserver.com"], username: "user", credential: "pass" },
   ]
 };
